@@ -1,10 +1,39 @@
-import sys
-
 from howdoi.howdoi import howdoi
 from os import getcwd, sep
 from PySide2.QtWidgets import ( QApplication, QMainWindow, QLabel, QLineEdit,
                                 QPushButton, QHBoxLayout, QTextEdit,
                                 QVBoxLayout, QWidget)
+from sys import argv
+
+# class GegTextEdit(QTextEdit):
+
+#     @property
+#     def text(self):
+#         return self.Q
+
+class GegPushButton(QPushButton):
+    
+    def __init__(self, *, label, font, click_func) -> None:
+        super().__init__(label)
+        self.font = font
+        self.clicked_activity = click_func
+
+    @property
+    def font(self):
+        ...
+    
+    @font.setter
+    def font(self, value):
+        self.setFont(value)
+
+    @property
+    def clicked_activity(self):
+        ...
+
+    @clicked_activity.setter
+    def clicked_activity(self, click_func):
+        self.clicked.connect(click_func)
+
 
 class GegMainWindow(QMainWindow):
 
@@ -20,56 +49,49 @@ class GegMainWindow(QMainWindow):
         font.setPointSize(14)
         
         # user input line
-        self.UserQuest = QLineEdit()
-        self.UserQuest.setFont(font)
-        self.UserQuest.setMaxLength(250)
-        self.UserQuest.setPlaceholderText('Please, write here your your question "How do I"')
+        self.user_quest = QLineEdit()
+        self.user_quest.setFont(font)
+        self.user_quest.setMaxLength(250)
+        self.user_quest.setPlaceholderText('Please, write here your your question "How do I"')
+        self.user_quest.returnPressed.connect(self.Ask)
 
         # ask button
         self.ask_button = QPushButton("Ask")
         self.ask_button.setFont(font)
         self.ask_button.clicked.connect(self.Ask)
 
-        ClearQuestionButton = QPushButton("Clear Question")
-        ClearQuestionButton.setFont(font)
-        ClearQuestionButton.clicked.connect(self.ClearQuestionBox)
-
-        ClearAnswerButton = QPushButton("Clear Answer")
-        ClearAnswerButton.setFont(font)
-        ClearAnswerButton.clicked.connect(self.ClearAnswerBox)
-
-        SaveAnswerButton = QPushButton("Save Answer")
-        SaveAnswerButton.setFont(font)
-        SaveAnswerButton.clicked.connect(self.SaveAnswerBox)
+        clear_question_button = GegPushButton(label="Clear Question", font=font, click_func=self.ClearQuestionBox)
+        clear_answer_button = GegPushButton(label="Clear Answer", font=font, click_func=self.ClearAnswerBox)
+        save_answer_button = GegPushButton(label="Save Answer", font=font, click_func=self.SaveAnswerBox)
 
         # define the structure of user interface GUI
         # - the box where user can write his question
         # - the Ask button
-        InputGUI = QVBoxLayout()
-        InputGUI.addWidget(self.UserQuest)
-        InputGUI.addWidget(self.ask_button)
+        input_gui = QVBoxLayout()
+        input_gui.addWidget(self.user_quest)
+        input_gui.addWidget(self.ask_button)
 
-        ButtonGUI = QHBoxLayout()
-        ButtonGUI.addWidget(SaveAnswerButton)
-        ButtonGUI.addWidget(ClearAnswerButton)
-        ButtonGUI.addWidget(ClearQuestionButton)
+        button_gui = QHBoxLayout()
+        button_gui.addWidget(save_answer_button)
+        button_gui.addWidget(clear_answer_button)
+        button_gui.addWidget(clear_question_button)
 
         # define the structure of ANSWER GUI
-        self.AnswerBox = QTextEdit()
-        self.AnswerBox.setFont(font)
-        self.AnswerBox.setStyleSheet('background-color: #D8E4E1')
-        self.AnswerBox.setReadOnly(True)
+        self.answer_box = QTextEdit()
+        self.answer_box.setFont(font)
+        self.answer_box.setStyleSheet('background-color: #D8E4E1')
+        self.answer_box.setReadOnly(True)
 
-        self.SavedAnswer = QLabel()
+        self.saved_answer = QLabel()
 
         # define final GUI structure
         # - User Ask GUI
         # - Answer GUI
         layout = QVBoxLayout()
-        layout.addLayout(InputGUI)
-        layout.addLayout(ButtonGUI)
-        layout.addWidget(self.AnswerBox)
-        layout.addWidget(self.SavedAnswer)
+        layout.addLayout(input_gui)
+        layout.addLayout(button_gui)
+        layout.addWidget(self.answer_box)
+        layout.addWidget(self.saved_answer)
         # layout.addWidget(self.label)
 
         # create the container with the above GUI defined
@@ -78,29 +100,30 @@ class GegMainWindow(QMainWindow):
         self.setCentralWidget(GuiContainer)
 
     def Ask(self):
-        if self.UserQuest.text() != '':
-            self.AnswerBox.setText(howdoi(self.UserQuest.text()))
+        if self.user_quest.text() != '':
+            self.answer_box.setText(howdoi(self.user_quest.text()))
 
     def ClearAnswerBox(self):
-        self.AnswerBox.setText('')
+        self.answer_box.setText('')
     
     def ClearQuestionBox(self):
-        self.UserQuest.setText('')
+        self.user_quest.setText('')
 
     def SaveAnswerBox(self):
-        if self.AnswerBox.toPlainText() != '':
-            _t = [ _.capitalize() for _ in self.UserQuest.text().split() if len(_) > 2]
+        if self.answer_box.toPlainText() != '':
+            _t = [ _.capitalize() for _ in self.user_quest.text().split() if len(_) > 2]
             _t.append('.txt')
             file_name = ''.join(_t)
             with open(file_name, 'w') as f:
-                f.writelines(self.AnswerBox.toPlainText())
+                f.writelines(self.answer_box.toPlainText())
 
-            self.SavedAnswer.setText(f'Answer saved in:\n{sep.join([getcwd(), file_name])}')
-            # self.SavedAnswer.setOpenExternalLinks(True)
-
+            msg = 'Answer saved in:\n<a href="' + sep.join([getcwd(), file_name]) + '">open path</a>'
+            print(msg)
+            self.saved_answer.setText(msg)
+            # self.saved_answer.setOpenExternalLinks(True)
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    app = QApplication(argv)
 
     window = GegMainWindow()
     window.show()
